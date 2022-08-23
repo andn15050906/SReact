@@ -1,0 +1,83 @@
+﻿/*? not refactored*/
+
+#account-container {
+    margin: 0 auto;
+}
+
+.form-group {
+    width: 300px;
+}
+
+#wrapper {
+    width: 50%;
+    margin: auto;
+}
+
+.identity-form {
+    margin-top: 40px;
+    margin-bottom: 40px;
+    padding: 20px;
+    width: 360px;
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.identity-form > button {
+    width: 30%;
+    background-color: limegreen;
+    color: white;
+    font-size: large;
+}
+
+.identity-form > button:hover {
+    width: 30%;
+    background-color: limegreen;
+    color: white;
+    font-size: large;
+}
+
+.identity-a > a {
+    margin: 20px;
+    display: block;
+    color: dodgerblue;
+}
+
+#external {
+    display: inline-block;
+    position: relative;
+    top: -360px;
+    left: 400px;
+}
+
+
+
+#nameLine > div > input {
+    display: inline;
+}
+
+.normal-p {
+    display: inline;
+}
+
+
+
+/*Account Detail*/
+.account-form {
+    margin: auto;
+    margin-top: 40px;
+    margin-bottom: 40px;
+    padding: 20px;
+    width: 500px;
+    display: flex;
+    flex-flow: column wrap;
+}
+
+
+
+/*Admin*/
+#add-role-form {
+    margin: 50px;
+}

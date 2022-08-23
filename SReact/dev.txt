@@ -1,0 +1,31 @@
+﻿Google api
+900 error???
+search
+file
+	extension		-> a list of image extensions and video extensions
+	hide path
+
+
+
+
+
+
+
+fixed
+	failed Login cause bug
+	friendBtn if made changes
+
+all ajax/fetch methods outside Global.js and Identity.js
+	friends.js		("Identity/GetMail")
+	account.js		("Identity/UpdateAccount")
+	messageBox.js	("Chat/GetChatRecords")
+	home.js			("Chat/GetInfo")
+	contact.js		("Chat/GetOtherChatUsers")
+	board.js		("Chat/UpdateNotification", "Chat/DeleteNotification")
+
+problems
+	prevent actions if the action is not accurate
+	log in failed make "external login" disappear?
+
+...
+	font awesome regular is consistent

@@ -1,0 +1,46 @@
+﻿@page
+@model RegisterModel
+
+<head>
+    <link rel="stylesheet" type="text/css" href="~/css/identity.css">
+</head>
+<div id="wrapper">
+    <form asp-route-returnUrl="@Model.ReturnUrl" method="post" class="identity-form"
+          style="margin: auto; margin-top: 40px; margin-bottom: 40px">
+        <h1>Register</h1>
+        <h5>Create a new account.</h5>
+        <div asp-validation-summary="All" class="text-danger"></div>
+        <div class="form-group" id="nameLine">
+            <div style="float: left; width: 45%">
+                <label>First Name</label>
+                <input asp-for="Input.FirstName" class="form-control" />
+                <span asp-validation-for="Input.FirstName" class="text-danger"></span>
+            </div>
+            <div style="float: right; width: 45%">
+                <label asp-for="Input.Surname"></label>
+                <input asp-for="Input.Surname" class="form-control" />
+                <span asp-validation-for="Input.Surname" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-group">
+            <label asp-for="Input.Email"></label>
+            <input asp-for="Input.Email" class="form-control" />
+            <span asp-validation-for="Input.Email" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="Input.Password"></label>
+            <input asp-for="Input.Password" class="form-control" />
+            <span asp-validation-for="Input.Password" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="Input.ConfirmPassword"></label>
+            <input asp-for="Input.ConfirmPassword" class="form-control" />
+            <span asp-validation-for="Input.ConfirmPassword" class="text-danger"></span>
+        </div>
+        <button type="submit" class="btn btn-default">Register</button>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
