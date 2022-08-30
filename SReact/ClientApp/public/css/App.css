@@ -8,7 +8,9 @@
     --contacts-bg: aliceblue;
     --contact-bg: white;
     --contact-hover: lightgray;
+
     --primary: #007bff;
+    --i-color: dimgray;
 }
 
 :root.dark-theme {
@@ -40,6 +42,20 @@ ul {
 .modal-backdrop {
     background-color: none !important;
     opacity: 0.5 !important;
+}
+
+.icon-btn {
+    display: inline-block;
+    border-radius: 50%;
+    text-align: center;
+    padding: 5px;
+    width: 35px;
+    height: 35px;
+}
+
+.icon-btn:hover {
+    background-color: lightgray;
+    cursor: pointer;
 }
 
 #container {
@@ -140,6 +156,11 @@ ul {
     transform: translateX(50px);
 }
 
-/*video {
-    margin-left: 400px;
-}*/
+
+
+
+
+
+.color-main {
+    color: var(--main-txt);
+}

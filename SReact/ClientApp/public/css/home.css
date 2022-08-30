@@ -11,12 +11,13 @@
 
 #contacts-header {
     width: 100%;
-    height: 20%;
+    height: 15%;
     padding: 16px;
 }
 
 #search {
-    width: 80%;
+    display: inline-block;
+    width: 75%;
     border-radius: 20px;
     background-color: var(--search-bg);
     padding: 10px;
@@ -27,7 +28,7 @@
     color: var(--main-txt);
     background-color: inherit;
     outline: none;
-    width: 80%;
+    width: 90%;
     height: 80%;
 }
 
@@ -117,8 +118,8 @@
 
 #fab-not-seen {
     position: absolute;
-    top: 8px;
-    right: 5px;             /*bottom function differently*/
+    top: 16px;
+    right: 16px;             /*bottom function differently*/
     color: white;
     background-color: red;
     border-radius: 40px;

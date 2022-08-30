@@ -1,5 +1,4 @@
 ﻿import $ from 'jquery';
-import ProfilePage from '../components/home/profilePage';
 //provide global methods / methods involve global variables
 
 var connection;
@@ -7,22 +6,23 @@ var userMail, userProfile;
 var contactDiv;                                                 //contactLst contains the index of contactDiv
 var contactLst = [];                                            //back-end for contactDiv
 var home = [], friendBtn = [], FABpopup = [], postArea = [];    //invoke react func
-var openingBoxs = [];                                           //invoke react func
+var openingBoxs = [], callWindow = [];                          //invoke react func
 var rcvNotify = [], sentNotify = [];
 var targetMsgId, targetMail;
 var theme = 0;
 
-//multiple boxes -> rmv & time so wrong
-//emoji
 //Notification unread & Read - signalr notify update
+//contactDiv dom search is bad
 
 export async function init(document, profile, signalRConnection) {
     userProfile = profile;
     userMail = profile.email;
     connection = signalRConnection;
     contactDiv = document.getElementById("contactLst");
-    await fetchRcvNotification();
-    await fetchSentNotification();
+    //await = ; await = -> 244 -> 494
+    //= =; await await  -> 204 -> 400
+    //Promise.all       -> 207 -> 377
+    await Promise.all([fetchRcvNotification(), fetchSentNotification()]);
 }
 
 export function fetchRcvNotification() {
@@ -55,6 +55,10 @@ export function showProfile(profile) {
     home[0].setProfile(profile);
 }
 
+export function showGroup(group) {
+    home[0].setGroup(group);
+}
+
 export function closeChat(profile) {
     home[0].closeChat(profile);
 }
@@ -66,12 +70,16 @@ export async function showNotifications() {
 export function markOnline(mail, status) {
     if (mail === userMail)
         return;
-    //
     var index = contactLst.findIndex(ele => ele.email === mail);
     //infinite?
-    if (status === true && index === -1) {
-        setTimeout(function () { markOnline(mail, status) }, 1000);
+    if (status === true) {
+        if (index === -1) {
+            setTimeout(function () { markOnline(mail, status) }, 1000);
+            return;
+        }
     }
+    if (!contactDiv)
+        contactDiv = document.getElementById("contactLst");
     var element = contactDiv.children[contactLst[index].divIndex];
     if (status !== element.children[1].classList.contains("online")) {
         element.children[1].classList.toggle("online");
@@ -90,7 +98,7 @@ export function sendPrivate(rcvMail, content, option) {
 }
 
 export function sendFilePrivate(rcvMail, file) {
-    //if successfully post file, alert
+    //upload exception??
     var formData = new FormData();
     formData.append("file", file);
     $.ajax({
@@ -99,16 +107,32 @@ export function sendFilePrivate(rcvMail, file) {
         url: 'Chat/UploadFile',
         processData: false,
         contentType: false,
-        success: function (response) {
-            //response = fileLink
-            sendPrivate(rcvMail, response, "file");
-        }
+        success: function (response) { sendPrivate(rcvMail, response, "file"); }    //response = file link
     });
 }
 
-export function onReceiveMessage(mail) {
-    //notify if box is not yet opened
-    updateBox(mail);
+export function sendGroup(groupId, content, option) {
+    connection.invoke("SendGroup", groupId, content, option).catch(function (err) {
+        return console.error(err.toString());
+    });
+}
+
+export function sendFileGroup(groupId, file) {
+    var formData = new FormData();
+    formData.append("file", file);
+    $.ajax({
+        type: "POST",
+        data: formData,
+        url: 'Chat/UploadFile',
+        processData: false,
+        contentType: false,
+        success: function (response) { sendGroup(groupId, response, "file"); }
+    });
+}
+
+export function onReceiveMsg(identifier) {
+    //notify if box is not yet opened (not seen)
+    updateBox(identifier);
 }
 
 export function deleteMsg() {
@@ -142,6 +166,23 @@ export async function fetchPosts(mail) {
 
 
 
+export function createRoom() {
+    connection.invoke("CreateRoom");
+}
+
+export function joinRoom(roomId) {
+    connection.invoke("JoinRoom", roomId);
+}
+
+export function sendRoom(roomId, content) {
+    connection.invoke("SendRoom", roomId, content);
+}
+
+
+
+
+
+
 export function getConnection() { return connection; }
 export function getUserMail() { return userMail; }
 export function getUserProfile() { return userProfile; }
@@ -152,6 +193,7 @@ export function getFriendBtn() { return friendBtn; }
 export function getFABpopup() { return FABpopup; }
 export function getPostArea() { return postArea; }
 export function getOpeningBoxs() { return openingBoxs; }
+export function getCallWindow() { return callWindow; }
 export function getTheme() { return theme; }
 
 export function toClientTime(serverTime) {
@@ -168,8 +210,11 @@ export function getContactName(profile) {
 
 
 
-function updateBox(mail) {
-    openingBoxs.find(ele => ele.props.info.email === mail).componentDidMount();
+function updateBox(identifier) {
+    if (isNaN(identifier))
+        openingBoxs.find(ele => ele.props.info.email === identifier).componentDidMount();
+    else
+        openingBoxs.find(ele => ele.props.info.chatGroupId === identifier).componentDidMount();
 }
 
 export function setRmvMsgModal(bool) {
@@ -184,6 +229,15 @@ export async function updateFriendBtn() {
 
 export function updateProfilePage() {
     postArea[0].reload();
+}
+
+export function inCall() {
+    getCallWindow()[0].setCall(true);
+    document.getElementById("nav").style.display = "none";
+}
+
+export function outCall() {
+
 }
 
 export function changeTheme() {

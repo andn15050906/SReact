@@ -1,7 +1,8 @@
-﻿using System.Collections.Generic;
-using Microsoft.AspNetCore.Identity;
-using System.Threading.Tasks;
+﻿using System;
 using System.Linq;
+using System.Threading.Tasks;
+using System.Collections.Generic;
+using Microsoft.AspNetCore.Identity;
 
 namespace SReact.Models
 {
@@ -33,8 +34,8 @@ namespace SReact.Models
                 });
             return infos;
         }
-
-        public static List<UserInfo> GetChatInfos(UserManager<AppUser> manager, Context context, IEnumerable<AppUser> users, AppUser self)
+        
+        public static List<UserInfo> GetChatInfos(Context context, IEnumerable<AppUser> users, AppUser client)
         {
             List<UserInfo> infos = new List<UserInfo>();
             foreach (AppUser user in users)
@@ -45,7 +46,7 @@ namespace SReact.Models
                     ContactName = GetContactName(user),
                     Surname = user.Surname,
                     FirstName = user.FirstName,
-                    IsFriend = context.AreFriends(user.Id, self.Id),
+                    IsFriend = context.AreFriends(user.Id, client.Id),
                     Avatar = user.Avatar,
                     CoverImg = user.CoverImg
                 });
@@ -57,6 +58,28 @@ namespace SReact.Models
 
     public class GroupInfo : SocialInfo
     {
+        public int ChatGroupId;
         public string GroupName;
+        public UserInfo AdminInfo;
+        public List<UserInfo> MemberInfos;
+        public string Avatar;
+        public DateTime FoundingDate;
+
+        //Navigation Load problem?
+        public static GroupInfo GetGroupInfo(Context context, ChatGroup chatGroup, AppUser client)
+        {
+            List<AppUser> memLst = new List<AppUser>();
+            foreach (Member_ChatGroup mcg in chatGroup.Member_ChatGroups)
+                memLst.Add(mcg.Member);
+            return new GroupInfo
+            {
+                ChatGroupId = chatGroup.ChatGroupId,
+                GroupName = chatGroup.GroupName,
+                AdminInfo = UserInfo.GetChatInfos(context, new List<AppUser> { chatGroup.GroupAdmin }, client)[0],
+                MemberInfos = UserInfo.GetChatInfos(context, memLst, client),
+                Avatar = chatGroup.Avatar,
+                FoundingDate = chatGroup.FoundingDate
+            };
+        }
     }
 }

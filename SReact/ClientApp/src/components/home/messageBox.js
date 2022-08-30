@@ -2,11 +2,11 @@
 import $ from 'jquery';
 import * as Glob from '../../script/Global';
 
-/*MessageBox, Message*/
+/*MessageBox, ChatPage, Message*/
 
 class MessageBox extends Component {
     constructor(props) {
-        super(props);                           //props: info
+        super(props);                           //props: info, isPrivate
         this.state = {
             userMail: {},
             messages: [],
@@ -16,6 +16,7 @@ class MessageBox extends Component {
         }
         this.state.userMail = Glob.getUserMail();
 
+        this.showMembers = this.showMembers.bind(this);
         this.minimize = this.minimize.bind(this);
         this.upload = this.upload.bind(this);
         this.emote = this.emote.bind(this);
@@ -33,11 +34,37 @@ class MessageBox extends Component {
             Glob.getOpeningBoxs().push(this);
     }
 
+    componentDidMount() {
+        if (this.props.isPrivate) {
+            this.fetchMsg(this.state.userMail).then((res) => {
+                this.setState({ messages: res });
+            });
+        }
+        else {
+            (async () => {
+                var res = await (await fetch("Chat/GetGroupChatRecords?groupId=" + this.props.info.chatGroupId)).json();
+                this.setState({ messages: res });
+            })();
+        }
+        if (this.bodyRef.current != null)
+            this.bodyRef.current.scrollTop = this.bodyRef.current.scrollHeight;
+        if (!this.state.addedEmojiEvent) {
+            this.setState({ addedEmojiEvent: true });
+            this.emojiRef.current.addEventListener('emoji-click', event => this.emojiPick(event));
+        }
+    }
+
+    //an alternative to fetch API
     async fetchMsg(mail) {
         return $.get(
             'Chat/GetChatRecords?mail1=' + mail + '&mail2=' + this.props.info.email,
             function (response) { return response; }
         );
+    }
+
+    showMembers() {
+        //modal
+        console.log(this.props.info.memberInfos);
     }
 
     minimize() {
@@ -64,7 +91,10 @@ class MessageBox extends Component {
     sendMessage() {
         var message = this.textRef.current.value;
         if (message !== "") {
-            Glob.sendPrivate(this.props.info.email, message, "text");
+            if (this.props.isPrivate)
+                Glob.sendPrivate(this.props.info.email, message, "text");
+            else
+                Glob.sendGroup(this.props.info.chatGroupId, message, "text");
         }
         this.textRef.current.value = "";
     }
@@ -72,19 +102,10 @@ class MessageBox extends Component {
     sendFile() {
         var file = this.fileRef.current.files[0];
         if (file) {
-            Glob.sendFilePrivate(this.props.info.email, file);
-        }
-    }
-
-    componentDidMount() {
-        this.fetchMsg(this.state.userMail).then((res) => {
-            this.setState({ messages: res });
-        });
-        if (this.bodyRef.current != null)
-            this.bodyRef.current.scrollTop = this.bodyRef.current.scrollHeight;
-        if (!this.state.addedEmojiEvent) {
-            this.setState({ addedEmojiEvent: true });
-            this.emojiRef.current.addEventListener('emoji-click', event => this.emojiPick(event));
+            if (this.props.isPrivate)
+                Glob.sendFilePrivate(this.props.info.email, file);
+            else
+                console.log(this.props.info.chatGroupId);
         }
     }
 
@@ -93,10 +114,16 @@ class MessageBox extends Component {
         return (
             <div className={this.state.minimized === false ? "message-box" : "message-box minimized"}>
                 <div className="chat-header">
-                    <div className="chat-dropdown hover-ptr">
-                        <img className="avatar" src={this.props.info.avatar} alt="" onClick={() => Glob.showProfile(this.props.info)} />
-                        <div className="chat-name">{this.props.info.contactName}</div>
-                    </div>
+                    {this.props.isPrivate ?
+                        <div className="chat-dropdown hover-ptr">
+                            <img className="avatar" src={this.props.info.avatar} alt="" onClick={() => Glob.showProfile(this.props.info)} />
+                            <div className="chat-name">{this.props.info.contactName}</div>
+                        </div> :
+                        <div className="chat-dropdown hover-ptr">
+                            <img className="avatar" src={this.props.info.avatar} alt="" onClick={this.showMembers} />
+                            <div className="chat-name">{this.props.info.groupName}</div>
+                        </div>
+                    }
                     <div className="chat-btn-lst hover-ptr">
                         <i className="la la-minus" onClick={this.minimize}></i>
                         <i className="la la-times close" onClick={() => Glob.closeChat(this.props.info)}></i>
@@ -114,7 +141,7 @@ class MessageBox extends Component {
                         <i className="far fa-image" onClick={this.upload} ></i>
                         <input type="text" placeholder="your message here..." ref={this.textRef} onKeyDown={this.messagingKeyDown} />
                         <i className="fa-regular fa-face-smile" onClick={this.emote} ></i>
-                        <i className="fa-regular fa-paper-plane" onClick={this.sendMessage} ></i>
+                        <i className="fa-regular fa-circle-right" onClick={this.sendMessage} ></i>
                         <input className="hidden" type="file" ref={this.fileRef} onChange={this.sendFile} />
                         <emoji-picker ref={this.emojiRef} class={this.state.emojiOpen ? "normal-picker" : "hidden-picker"}></emoji-picker>
                     </div> :
@@ -125,6 +152,41 @@ class MessageBox extends Component {
 }
 
 export default MessageBox;
+
+//may use ChatPage as an alternative to MessageBox
+//not used
+class ChatPage extends Component {
+    constructor(props) {
+        super(props);                           //props: profile
+        this.state = {
+            userMail: {},
+            profile: props.profile,
+            messages: [],
+            emojiOpen: false,
+            addedEmojiEvent: false
+        }
+        this.state.userMail = Glob.getUserMail();
+    }
+
+    render() {
+        return (
+            <div id="profile-page" >
+                <div id="chatpage-header">
+                    <img className="avatar" src={this.state.profile.avatar} alt="" />
+                    <div className="chat-name">{this.state.profile.groupName}</div>
+                    {/*Video call*/}
+                </div>
+                <div id="chatpage-body">{/*ref*/}
+                    {this.state.messages.map((rcd) =>
+                        <Message key={rcd.chatRecordId} chatRecord={rcd} userMail={this.state.userMail} targetMail={this.props.info.email} />
+                    )}
+                </div>
+            </div>
+        );
+    }
+};
+
+export { ChatPage };
 
 function Message(props) {
     var record = props.chatRecord;

@@ -2,6 +2,7 @@ import { React, useState, useEffect } from 'react';
 import Nav from './components/Nav';
 import Home from './components/home/Home';
 import FriendWindow from './components/Friends';
+import CallWindow from './components/CallWindow';
 import Settings from './components/Settings';
 import Account from './components/Account';
 import { GetClientChatInfo } from './script/Identity';
@@ -14,7 +15,7 @@ function App(props) {
 
     useEffect(() => {
         //Move inside to preserve
-        var response, json;
+        var response;
         
         (async () => {
             response = await (await GetClientChatInfo()).json();
@@ -40,11 +41,13 @@ function App(props) {
                     <Home client={clientInfo} /> :
                     props.path === '/friends' ?
                         <FriendWindow client={clientInfo} /> :
-                        props.path === '/settings' ?
-                            <Settings /> :
-                            props.path === '/profile' ?
-                                <Account client={clientInfo} /> :
-                                <div />
+                        props.path === '/call' ?
+                            <CallWindow client={clientInfo} /> :
+                            props.path === '/settings' ?
+                                <Settings client= { clientInfo } /> :
+                                props.path === '/profile' ?
+                                    <Account client={clientInfo} /> :
+                                    <div />
                 }
             </div>
         </div>

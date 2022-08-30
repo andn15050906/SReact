@@ -22,7 +22,7 @@ init().then(() => {
     root.render(
         <Router>
             <Routes>
-                {["/", "/home", "/friends", "/settings", "/profile"].map((path) =>
+                {["/", "/home", "/friends", "/call", "/settings", "/profile"].map((path) =>
                     <Route key="home" path={path} element={json ? <App path={path} /> : <Login />} />
                 )}
                 <Route key="login" exact path="/Login" element={<Login />} />

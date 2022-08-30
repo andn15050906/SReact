@@ -16,7 +16,9 @@ namespace SReact.Models
         public int ChatGroupId { get; set; }
         public string GroupName { get; set; }
         public AppUser GroupAdmin { get; set; }
-        public ICollection<AppUser> Members { get; set; }       //Many - Many
+        public ICollection<Member_ChatGroup> Member_ChatGroups { get; set; }       //Many - Many
+        public string Avatar { get; set; }
+        public DateTime FoundingDate { get; set; }
     }
 
 
@@ -46,7 +48,7 @@ namespace SReact.Models
         public string File { get; set; }                        //concat
         public ICollection<TagPost> TagPosts { get; set; }      //Many - Many
         public DateTime Time { get; set; }
-        public ICollection<Comment> Comments { get; set; }      //One - Many
+        public ICollection<Comment> Comments { get; set; }      //One - Many        may not be <Comment> but <int>
         public ICollection<Reaction> Reactions { get; set; }    //One - Many
     }
 
@@ -57,12 +59,12 @@ namespace SReact.Models
         public AppUser Receiver { get; set; }
         public string Message { get; set; }
         public DateTime Time { get; set; }
-        public string Type { get; set; }            //ex: Friend
-        public string Status { get; set; }          //ex: Accepted, Seen
-        public string Link { get; set; }            //link
+        public string Type { get; set; }                    //ex: Friend
+        public string Status { get; set; }                  //ex: Accepted, Seen
+        public string Link { get; set; }                    //link
     }
     
-    public class Reaction
+    public class Reaction                                   //unused
     {
         public int ReactionId { get; set; }                 //for ChatRecord & Post
         public AppUser Author { get; set; }
@@ -73,7 +75,7 @@ namespace SReact.Models
 
     public class Comment
     {
-        public int CommentId { get; set; }                      //for Post
+        public int CommentId { get; set; }
         public AppUser Author { get; set; }
         public Post SrcPost { get; set; }                       //nullable
         public Comment SrcComment { get; set; }                 //nullable
@@ -96,7 +98,7 @@ namespace SReact.Models
 
 
 
-    public class Reply
+    public class Reply                                          //unused
     {
         public int Id { get; set; }
         public Comment Source { get; set; }
@@ -109,5 +111,13 @@ namespace SReact.Models
         public int PostId { get; set; }
         public Tag Tag { get; set; }
         public Post Post { get; set; }
+    }
+
+    public class Member_ChatGroup
+    {
+        public string MemberId { get; set; }
+        public int ChatGroupId { get; set; }
+        public AppUser Member { get; set; }
+        public ChatGroup ChatGroup { get; set; }
     }
 }

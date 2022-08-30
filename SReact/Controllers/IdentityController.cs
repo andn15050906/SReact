@@ -26,8 +26,6 @@ namespace SReact.Controllers
             var user = await userManager.GetUserAsync(User);
             user.Surname = Surname;
             user.FirstName = FirstName;
-            System.Diagnostics.Debug.WriteLine("user surname is now " + user.Surname + "\n");
-            System.Diagnostics.Debug.WriteLine("user surname is now " + user.FirstName + "\n");
             await userManager.UpdateAsync(user);
         }
 
@@ -44,13 +42,6 @@ namespace SReact.Controllers
 
         public string LoggedIn()
         {
-            System.Diagnostics.Debug.WriteLine("\n\n\n\n\n\n\n\n");
-            System.Diagnostics.Debug.WriteLine(User.Identity.AuthenticationType);
-            System.Diagnostics.Debug.WriteLine(HttpContext.User.Identity.IsAuthenticated);
-            System.Diagnostics.Debug.WriteLine(HttpContext.User.Identity.Name);
-            System.Diagnostics.Debug.WriteLine(User.Claims.ToString());
-            System.Diagnostics.Debug.WriteLine(User.Identity.Name);
-            System.Diagnostics.Debug.WriteLine("\n\n\n\n\n\n\n\n");
             return JsonConvert.SerializeObject(User.Identity.IsAuthenticated);
         }
 
@@ -61,7 +52,7 @@ namespace SReact.Controllers
             //user is defined by email
             var user = await userManager.GetUserAsync(User);
             var lst = new List<AppUser> { user };
-            return UserInfo.GetChatInfos(userManager, context, lst, user)[0];
+            return UserInfo.GetChatInfos(context, lst, user)[0];
         }
 
         public async Task<UserInfo> GetClientAccountInfo()

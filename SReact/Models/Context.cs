@@ -44,10 +44,21 @@ namespace SReact.Models
                 .HasOne<Post>(tp => tp.Post)
                 .WithMany(post => post.TagPosts)
                 .HasForeignKey(tp => tp.PostId);
+
+            modelBuilder.Entity<Member_ChatGroup>().HasKey(mcg => new { mcg.MemberId, mcg.ChatGroupId });
+            modelBuilder.Entity<Member_ChatGroup>()
+                .HasOne<AppUser>(mcg => mcg.Member)
+                .WithMany(m => m.Member_ChatGroups)
+                .HasForeignKey(mcg => mcg.MemberId);
+            modelBuilder.Entity<Member_ChatGroup>()
+                .HasOne<ChatGroup>(mcg => mcg.ChatGroup)
+                .WithMany(cg => cg.Member_ChatGroups)
+                .HasForeignKey(mcg => mcg.ChatGroupId);
         }
 
 
         //Chat
+            //Message
         public int SendPrivate(AppUser sender, AppUser receiver, string message)
         {
             Attach(sender);
@@ -62,34 +73,21 @@ namespace SReact.Models
             SaveChanges();
             return ChatRecords.Last().ChatRecordId;
         }
-        public IEnumerable<ChatRecord> GetChatRecords(string id1, string id2)
+        public int SendGroup(AppUser sender, int groupId, string message)
         {
-            //explicit loading
-            var records = ChatRecords.Where(ele => IsPermutation(ele.Sender.Id, ele.PrivateTo.Id, id1, id2));
-            foreach (ChatRecord record in records)
+            //tracked??
+            //Attach(sender);
+            ChatRecords.Add(new ChatRecord
             {
-                Entry(record).Reference(ele => ele.Sender).Load();
-                Entry(record).Reference(ele => ele.PrivateTo).Load();
-            }
-            return records.Select(ele => new ChatRecord
-            {
-                ChatRecordId = ele.ChatRecordId,
-                Sender = new AppUser { Email = ele.Sender.Email, Avatar = ele.Sender.Avatar },
-                PrivateTo = new AppUser { Email = ele.PrivateTo.Email },
-                Message = ele.Message,
-                File = ele.File,
-                Time = ele.Time
+                Sender = sender,
+                GroupTo = GetChatGroup(groupId),
+                Message = message,
+                Time = DateTime.Now
             });
-        }
-        public void DeleteChatRecord(int id)
-        {
-            ChatRecords.Remove(ChatRecords.First(ele => ele.ChatRecordId == id));
             SaveChanges();
+            return ChatRecords.Last().ChatRecordId;
         }
-
-
-
-        //Upload -> Explicit
+            //File -> Explicit
         public string CreateChatFile(IFormFile file)
         {
             //Doesn't involve DB
@@ -114,7 +112,59 @@ namespace SReact.Models
             SaveChanges();
             return ChatRecords.Last().ChatRecordId;
         }
-
+        public int UploadGroup(AppUser sender, int groupId, string file)
+        {
+            Attach(sender);
+            ChatRecords.Add(new ChatRecord
+            {
+                Sender = sender,
+                GroupTo = GetChatGroup(groupId),
+                File = file,
+                Time = DateTime.Now
+            });
+            SaveChanges();
+            return ChatRecords.Last().ChatRecordId;
+        }
+        public IEnumerable<ChatRecord> GetChatRecords(string id1, string id2)
+        {
+            //explicit loading
+            var records = ChatRecords.Where(ele => IsPermutation(ele.Sender.Id, ele.PrivateTo.Id, id1, id2));
+            foreach (ChatRecord record in records)
+            {
+                Entry(record).Reference(ele => ele.Sender).Load();
+                Entry(record).Reference(ele => ele.PrivateTo).Load();
+            }
+            return records.Select(ele => new ChatRecord
+            {
+                ChatRecordId = ele.ChatRecordId,
+                Sender = new AppUser { Email = ele.Sender.Email, Avatar = ele.Sender.Avatar },
+                PrivateTo = new AppUser { Email = ele.PrivateTo.Email },
+                Message = ele.Message,
+                File = ele.File,
+                Time = ele.Time
+            });
+        }
+        public IEnumerable<ChatRecord> GetChatRecords(int groupId)
+        {
+            var records = ChatRecords.Where(ele => ele.GroupTo.ChatGroupId == groupId);
+            foreach (ChatRecord record in records)
+                Entry(record).Reference(ele => ele.Sender).Load();
+            return records.Select(ele => new ChatRecord
+            {
+                ChatRecordId = ele.ChatRecordId,
+                Sender = new AppUser { Email = ele.Sender.Email, Avatar = ele.Sender.Avatar },
+                //GroupTo will not be mapped (using Id as key)
+                Message = ele.Message,
+                File = ele.File,
+                Time = ele.Time
+            });
+        }
+        public void DeleteChatRecord(int id)
+        {
+            ChatRecords.Remove(ChatRecords.First(ele => ele.ChatRecordId == id));
+            SaveChanges();
+        }
+        //Delete uploaded file?
 
 
         //Notification
@@ -251,11 +301,9 @@ namespace SReact.Models
                     current = tag.TagName;
                     if (tags.Contains(current))                                 //  if the tag already exists, add post to tag
                     {
-                        //check if this works
                         TagPost newTP = new TagPost { Post = post, Tag = tag };
-                        //Load tag.TagPosts or use it as an empty array (below)?
+                        //Load tag.TagPosts then add newTP or use it as an empty array (below)?
                         tag.TagPosts = new List<TagPost> { newTP };
-                        //tag.TagPosts.Add(newTP);
                         post.TagPosts.Add(newTP);
                         tags.Remove(current);                                   //    remove then continue with the remainings
                     }
@@ -284,17 +332,24 @@ namespace SReact.Models
         }
         public IEnumerable<PostInfo> GetPosts(string authorId)
         {
-            var lst = Posts.Include(ele => ele.Author).Include(ele => ele.TagPosts)
-                .Where(ele => ele.Author.Id == authorId);
+            var lst = Posts.Where(ele => ele.Author.Id == authorId);
             List<PostInfo> result = new List<PostInfo>();
             foreach (Post ele in lst)
             {
+                Entry(ele).Reference(p => p.Author).Load();
+                Entry(ele).Collection(p => p.TagPosts).Load();
+                Entry(ele).Collection(p => p.Comments).Load();
+
                 List<string> tags = new List<string>();
+                List<int> commentIds = new List<int>();
                 foreach (TagPost tagpost in ele.TagPosts)
                 {
                     Entry(tagpost).Reference(tp => tp.Tag).Load();
                     tags.Add(tagpost.Tag.TagName);
                 }
+                foreach (Comment comment in ele.Comments)
+                    commentIds.Add(comment.CommentId);
+
                 result.Add(new PostInfo {
                     PostId = ele.PostId,
                     Author = ele.Author,
@@ -303,7 +358,7 @@ namespace SReact.Models
                     File = ele.File,
                     Tags = tags,
                     Time = ele.Time,
-                    CommentIds = new List<int>(),
+                    CommentIds = commentIds,
                     ReactionIds = new List<int>()
                 });
             }
@@ -311,9 +366,100 @@ namespace SReact.Models
         }
         //delelePost
         //updatePost
+        
+        
+        
+        //Comment
+        public int CreatePostComment(Comment _comment, AppUser author, int postId)
+        {
+            Attach(author);
+            Comment comment = new Comment
+            {
+                Author = author,
+                SrcPost = Posts.First(ele => ele.PostId == postId),
+                Content = _comment.Content,
+                File = _comment.File,
+                Time = _comment.Time
+            };
+            Comments.Add(comment);
+            SaveChanges();
+            return Comments.Last().CommentId;
+        }
+        public IEnumerable<Comment> GetComments(IEnumerable<int> ids)
+        {
+            //not optimized?
+            return Comments.Include(ele => ele.Author).Where(ele => ids.Contains(ele.CommentId));
+        }
+        
 
 
-        //add datetime to filename?
+        //Group
+        public int CreateGroup(string name, AppUser creator, List<AppUser> members)
+        {
+            Attach(creator);
+            ChatGroup chatGroup = new ChatGroup
+            {
+                GroupName = name,
+                GroupAdmin = creator,
+                Member_ChatGroups = new List<Member_ChatGroup>(),
+                Avatar = "/images/group-icon.png",
+                FoundingDate = DateTime.Now
+            };
+            foreach (AppUser user in members)
+            {
+                Attach(user);
+                Member_ChatGroup mcg = new Member_ChatGroup { Member = user, ChatGroup = chatGroup };
+                //Load user.Member_ChatGroups then add or use it as an empty array (below)?
+                user.Member_ChatGroups = new List<Member_ChatGroup> { mcg };
+                chatGroup.Member_ChatGroups.Add(mcg);
+            }
+            SaveChanges();
+            return ChatGroups.Last().ChatGroupId;
+        }
+        public IEnumerable<ChatGroup> GetChatGroups(AppUser user)
+        {
+            //load member_chatgroup by user
+            Attach(user);
+            List<ChatGroup> lst = new List<ChatGroup>();
+
+            Entry(user).Collection(ele => ele.Member_ChatGroups).Load();                //245millisecond
+            foreach (Member_ChatGroup mcg in user.Member_ChatGroups)
+            {
+                Entry(mcg).Reference(ele => ele.ChatGroup).Load();                      //load group by member_chatgroup
+                //load members by group
+                Entry(mcg.ChatGroup).Collection(ele => ele.Member_ChatGroups).Load();   //load members_chatgroup by group
+                foreach (Member_ChatGroup memMcg in mcg.ChatGroup.Member_ChatGroups)    //load members by members_chatgroup
+                    Entry(memMcg).Reference(ele => ele.Member).Load();
+                lst.Add(mcg.ChatGroup);
+            }
+
+            /*Entry(user).Collection(ele => ele.Member_ChatGroups).Load();                //453millisecond
+            List<int> idLst = new List<int>();
+            foreach (Member_ChatGroup mcg in user.Member_ChatGroups)
+                idLst.Add(mcg.ChatGroupId);
+            lst = ChatGroups
+                .Include(ele => ele.GroupAdmin)
+                .Include(ele => ele.Member_ChatGroups).ThenInclude(ele => ele.Member)
+                .Where(ele => idLst.Contains(ele.ChatGroupId))
+                .ToList();*/
+            return lst;
+        }
+        ChatGroup GetChatGroup(int groupId) => ChatGroups.FirstOrDefault(ele => ele.ChatGroupId == groupId);
+        public List<AppUser> GetMembers(int groupId)
+        {
+            List<AppUser> result = new List<AppUser>();
+            var group = ChatGroups.FirstOrDefault(ele => ele.ChatGroupId == groupId);
+            Entry(group).Collection(ele => ele.Member_ChatGroups).Load();
+            foreach (Member_ChatGroup memMcg in group.Member_ChatGroups)
+            {
+                Entry(memMcg).Reference(ele => ele.Member).Load();
+                result.Add(memMcg.Member);
+            }
+            return result;
+        }
+
+
+
         bool SaveIfNotExist(IFormFile file, string fileName, string dir)
         {
             if (ExistInDirectory(fileName, dir))

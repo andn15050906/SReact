@@ -1,10 +1,25 @@
 ﻿Google api
 900 error???
+fetching
+	slow at start (fetch other users)
+	handle when fetches fail
+	context.cs -> GetChatGroups
+		hot fix: ignore reference looping
+		true   : select from query
+	prevent ALL api to return AppUser
+chatGroup
+	create success
 search
 file
 	extension		-> a list of image extensions and video extensions
 	hide path
 
+
+
+
+one-to-many			-> id concat
+what if
+	a user delete his account while being added to a group?
 
 
 
@@ -28,4 +43,12 @@ problems
 	log in failed make "external login" disappear?
 
 ...
-	font awesome regular is consistent
+	font awesome
+		check fa-regular / fa
+
+		all i
+			Nav.js
+			profilePage.js		upload tag-removing tag-adding file emoji send
+			messageBox.js		minimize close image emoji send file
+			homeGadgets.js		bar
+			Home.js				search

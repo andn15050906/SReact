@@ -36,7 +36,8 @@ namespace SReact
                 builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader().AllowCredentials();
             }));
             //Generated
-            services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
+            services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1)
+                .AddJsonOptions(x => x.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore);
             services.AddDbContext<Context>(options => options.UseSqlServer(Configuration.GetConnectionString("AcademyDatabase")), ServiceLifetime.Transient);
             services.AddDefaultIdentity<AppUser>()
                     .AddRoles<IdentityRole>()

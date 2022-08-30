@@ -5,8 +5,11 @@ import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
 import $ from 'jquery';
 
 import * as Glob from '../../script/Global';
+//import { ChatPage } from './messageBox';
 
 /*ProfilePage, FriendBtn, PostModal, PostArea*/
+//beware: componentDidUpdate
+//      when changing target Profile: PostArea called
 
 function ProfilePage(props) {
     const modalRef = createRef();
@@ -18,6 +21,7 @@ function ProfilePage(props) {
     if (!props.profile)
         return (<div />);
 
+    //if this is user2user-exclusive, put 1 if
     return (
         <div id="profile-page">
             <div id="profile-header">
@@ -40,12 +44,17 @@ function ProfilePage(props) {
                     </div>
                 </div>
             }
-            <PostModal ref={modalRef}/>
+            <PostModal ref={modalRef} />
             <div className="post-area-container">
                 <PostArea profile={props.profile} />
             </div>
         </div>
     );
+
+    /*if need changes, changes Home.js first
+     * return (
+        <ChatPage profile={props.profile} />
+    );*/
 }
 
 export default ProfilePage;
@@ -295,7 +304,15 @@ class PostArea extends Component {
             return 1;
         });
         this.setState({ posts: sorted });
-        console.log(sorted);
+    }
+
+    componentDidUpdate(prevProps) {
+        if (prevProps !== this.props) {
+            (async () => {
+                await this.setState({ profile: this.props.profile });
+                this.reload();
+            })();
+        }
     }
 
     render() {
@@ -311,7 +328,9 @@ class PostArea extends Component {
 function Post(props) {
     const data = props.data;
     const writable = createRef();
-    const [fileStruct, setFiles] = useState([]);
+    const [fileStructs, setFiles] = useState([]);
+    const [commentIds, setCommentIds] = useState([]);
+    const [comments, setComments] = useState([]);
 
     useEffect(() => {
         if (data.file) {
@@ -319,7 +338,30 @@ function Post(props) {
             var fileArr = [fileStruct];
             setFiles(fileArr);
         }
+        if (data.commentIds.length > 0)
+            (async () => {
+                setCommentIds(data.commentIds);
+                $.get(
+                    "Chat/GetComments",
+                    { ids: JSON.stringify(data.commentIds) },
+                    function (response) { setComments(response); }
+                )
+            })();
     }, []);
+
+    async function addCommentIds(id) {
+        await setCommentIds(commentIds.push(id));
+        fetchComments();
+    }
+
+    function fetchComments() {
+        $.get(
+            "Chat/GetComments",
+            { ids: JSON.stringify(commentIds) },
+            function (response) { setComments(response); }
+        )
+        //not updating comments
+    }
 
     function commentClick() {
         writable.current.focusInput();
@@ -340,8 +382,8 @@ function Post(props) {
             </div>
             <div className="post-body">
                 <div dangerouslySetInnerHTML={{ __html: data.content }}></div>
-                {fileStruct.length > 0 ?
-                    fileStruct.map(ele =>
+                {fileStructs.length > 0 ?
+                    fileStructs.map(ele =>
                         ele.extension === 'png' || ele.extension === 'jpg' ?
                             <div key={ele.file} className="post-img-container">
                                 <img src={getFile(ele.file)} alt="" />
@@ -364,15 +406,17 @@ function Post(props) {
             <div className="post-footer">
                 <div className="post-footer-c1">
                     <div>{data.reactions ? "reaction here..." : ""}</div>
-                    <div>{data.comment ? data.comment.length + " Comments" : ""}</div>
+                    <div>{/*length?*/data.commentIds.length > 0 ? data.commentIds.length + " Comments" : ""}</div>
                 </div>
                 <div className="post-footer-c2">
                     <div className="post-btn">Like</div>
                     <div className="post-btn" onClick={commentClick}>Comment</div>
                 </div>
                 <div className="post-footer-c3">
-                    <Comment ref={writable} writable />
-                    {data.comment ? "comment here..." : ""}
+                    <Comment ref={writable} srcPost={data.postId} writable addCallback={addCommentIds} />
+                    {comments.length > 0 ?
+                        comments.map(ele => <Comment key={ele.commentId} commentInfo={ele} />) :
+                        <div/>}
                 </div>
             </div>
         </div>
@@ -384,11 +428,14 @@ class Comment extends Component {
     constructor(props) {
         super(props);
         this.state = {
-            write: this.props.writable ? true : false
+            write: this.props.writable ? true : false,
+            srcPost: this.props.srcPost,
+            commentInfo: this.props.commentInfo
         }
         this.input = createRef();
 
         this.commentKeyDown = this.commentKeyDown.bind(this);
+        this.sendComment = this.sendComment.bind(this);
     }
 
     focusInput() {
@@ -397,7 +444,27 @@ class Comment extends Component {
 
     commentKeyDown(e) {
         if (e.key === 'Enter')
-            console.log("Send comment...");
+            this.sendComment();
+    }
+
+    sendComment() {
+        var content = this.input.current.value;
+        if (content.length == 0 /*&& file == null*/)
+            return;
+        var formData = new FormData();
+        formData.append("postId", this.state.srcPost);
+        formData.append("content", this.input.current.value);
+        //formData.append("file", files);
+        $.ajax({
+            type: "POST",
+            url: 'Chat/CreatePostComment',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: (id) => { this.props.addCallback(id); }
+        });
+        this.input.current.value = "";
+        //file = []
     }
 
     render() {
@@ -406,12 +473,24 @@ class Comment extends Component {
                 {this.state.write ?
                     <div>
                         <img src={Glob.getUserProfile().avatar} alt="" className="avatar-small" />
-                        <div className="comment-group">
+                        <div className="comment-container">
                             <input placeholder="Write a comment..." type="text" onKeyDown={this.commentKeyDown} ref={this.input} />
-                            <i className="fa-regular fa-face-smile"></i>
+                            <i className="fa-regular fa-face-smile" onClick={() => console.log("emoji")}></i>
+                            <i className="fa-regular fa-circle-right" onClick={() => this.sendComment()}></i>
                         </div>
                     </div> :
-                    <div />}
+                    this.state.commentInfo ?
+                        <div>
+                            <img src={this.state.commentInfo.author.avatar} alt="" className="avatar-small" />
+                            <div className="comment-container">
+                                <div className="comment-sent">
+                                    <div><b>{Glob.getContactName(this.state.commentInfo.author)}</b></div>
+                                    <div>{this.state.commentInfo.content}</div>
+                                </div>
+                                {/*file, reaction, replies, time*/}
+                            </div>
+                        </div> :
+                        <div />}
             </div>
         );
     }

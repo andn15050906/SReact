@@ -177,7 +177,10 @@
 }
 
 .chat-footer i {
+    color: var(--i-color);
     font-size: 24px;
+    margin-left: 5px;
+    margin-right: 5px;
 }
 
 .chat-footer i:hover {
@@ -186,7 +189,7 @@
 
 .chat-footer input {
     height: 32px;
-    width: 75%;
+    width: 70%;
 }
 
 emoji-picker {

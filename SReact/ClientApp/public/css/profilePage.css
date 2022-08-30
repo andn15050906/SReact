@@ -55,7 +55,7 @@
     color: white !important;
     background-color: var(--primary) !important;
     font-size: 20px;
-    width: 150px;
+    width: 180px;
     height: 40px;
 }
 
@@ -245,25 +245,42 @@
     margin-top: 5px;
 }
 
+.post-comment {
+    margin-top: 10px;
+}
+
 .avatar-small {
     width: 32px;
     height: 32px;
     border-radius: 50%;
 }
 
-.comment-group {
-    float: right;
+.comment-container {
+    display: inline-block;
     border-radius: 20px;
     background-color: var(--search-bg);
     width: 90%;
 }
 
-.comment-group input {
+.comment-container input {
     border: none;
     color: var(--main-txt);
     background-color: inherit;
     outline: none;
     margin-left: 10px;
     height: 32px;
-    width: 80%;
+    width: 70%;
+}
+
+.comment-container i {
+    color: var(--i-color);
+    font-size: 20px;
+    margin-left: 5px;
+    margin-right: 5px;
+}
+
+.comment-sent {
+    margin: 10px;
+    font-size: 14px;
+    line-height: 16px;
 }

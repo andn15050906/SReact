@@ -17,6 +17,11 @@ function Nav(props) {
                     </Link>
                 </li>
                 <li className="nav-item" >
+                    <Link to={'/call'}>
+                        <i className="fa fa-video" style={{ fontSize: "32px" }}></i>
+                    </Link>
+                </li>
+                <li className="nav-item" >
                     <Link to={'/settings'}>
                         <i className="fa fa-cogs" style={{ fontSize: "32px" }}></i>
                     </Link>
