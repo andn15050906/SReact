@@ -160,7 +160,96 @@ ul {
 
 
 
+/*where?*/
 
 .color-main {
     color: var(--main-txt);
+}
+
+/*call-window*/
+
+#call-outer div {
+    margin: 10px;
+}
+
+#call-outer input {
+    height: 34px;
+}
+
+#full-screen {
+    position: absolute;
+    width: 100vw;
+    height: 100vh;
+    background-color: black;
+}
+
+#call-left-side {
+    position: absolute;
+    width: 80%;
+    height: 100%;
+}
+
+#videos-container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-gap: 10px;
+}
+
+#call-btns-container {
+    display: flex;
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+}
+
+#call-btns {
+    display: inline-block;
+    margin: auto;
+}
+
+#call-btns div {
+    position: relative;
+    display: inline-block;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    margin: 10px;
+    background-color: greenyellow;
+}
+
+#call-btns div:hover {
+    cursor: pointer;
+}
+
+#call-btns div i {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    margin: auto;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    font-size: 27px;
+}
+
+#call-right-side {
+    width: 20%;
+    height: 100%;
+    background-color: aliceblue;
+    float: right;
+}
+
+.room-chat-container {
+    height: 90%;
+}
+
+.room-chat-body {
+    max-height: 80%;
+    overflow: auto;
+}
+
+.room-chat-container input {
+    position: absolute;
+    bottom: 0;
 }

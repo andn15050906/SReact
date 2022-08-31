@@ -1,4 +1,5 @@
-﻿import $ from 'jquery';
+﻿import { stopStream } from './Chat'
+import $ from 'jquery';
 //provide global methods / methods involve global variables
 
 var connection;
@@ -178,6 +179,18 @@ export function sendRoom(roomId, content) {
     connection.invoke("SendRoom", roomId, content);
 }
 
+export function inCall(roomId) {
+    getCallWindow()[0].setCall(roomId);
+    document.getElementById("nav").style.display = "none";
+}
+
+export function leaveCall() {
+    //invoke by user, so no need getCallWindow
+    stopStream();
+    document.getElementById("nav").style.display = "initial";
+    connection.invoke("LeaveRoom");
+}
+
 
 
 
@@ -229,15 +242,6 @@ export async function updateFriendBtn() {
 
 export function updateProfilePage() {
     postArea[0].reload();
-}
-
-export function inCall() {
-    getCallWindow()[0].setCall(true);
-    document.getElementById("nav").style.display = "none";
-}
-
-export function outCall() {
-
 }
 
 export function changeTheme() {

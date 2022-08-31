@@ -1,6 +1,8 @@
 ﻿import { HubConnectionBuilder } from '@microsoft/signalr';
 import * as Glob from './Global';
 
+var localStream;
+
 export const ConnectionConstructor = (url) => {
     const connection = new HubConnectionBuilder().withUrl(url).build();
 
@@ -47,16 +49,11 @@ export const ConnectionConstructor = (url) => {
         video: { width: 400, height: 300 }
     };
     //do not allow multiple calls at once
-    var localStream, rtcPeerConnection;
+    var rtcPeerConnection;
 
-
-
-
-    
-
-    async function setUpLocal() {
+    async function setUpLocal(roomId) {
         try {
-            Glob.inCall();
+            Glob.inCall(roomId);
             localStream = await navigator.mediaDevices.getUserMedia(constraints);
             document.querySelector('video#local').srcObject = localStream;
         } catch (e) {
@@ -78,8 +75,7 @@ export const ConnectionConstructor = (url) => {
     }
 
     connection.on("CreatedRoom", async (roomId) => {
-        console.log(roomId);
-        await setUpLocal();
+        await setUpLocal(roomId);
     })
     
     connection.on("StartCall", async (roomId) => {
@@ -92,7 +88,7 @@ export const ConnectionConstructor = (url) => {
     
     connection.on("ReceiveOffer", async (roomId, sdp) => {
         //guest
-        await setUpLocal();
+        await setUpLocal(roomId);
         setUpPeerConnection(roomId);
         rtcPeerConnection.setRemoteDescription(new RTCSessionDescription(JSON.parse(sdp)));
         var answerSDP = await rtcPeerConnection.createAnswer();
@@ -104,22 +100,26 @@ export const ConnectionConstructor = (url) => {
         try {
             rtcPeerConnection.setRemoteDescription(new RTCSessionDescription(JSON.parse(SDP)));
         } catch (err) {
-            console.log(err);
+            console.error(err);
         }
     })
 
     connection.on("ReceiveICECandidate", function (candidate) {
         try {
-            //guest show bug: rtcPeerConnection undefined
             rtcPeerConnection.addIceCandidate(new RTCIceCandidate(JSON.parse(candidate)));
         } catch (err) {
+            //guest show bug: rtcPeerConnection undefined
             console.log(err);
         }
     })
 
     connection.on("NewJoin", function (mail, roomId) {
         console.log(mail + " has joined the room " + roomId);
-    });
+    })
+
+    connection.on("DetectLeave", function (mail, roomId) {
+        //turn off their videos
+    })
 
     connection.on("RoomNotFound", function () {
         alert('Room does not exist');
@@ -132,4 +132,9 @@ export const ConnectionConstructor = (url) => {
 
     connection.start();
     return connection;
+}
+
+export function stopStream() {
+    localStream.getVideoTracks()[0].stop();
+    localStream.getAudioTracks()[0].stop();
 }

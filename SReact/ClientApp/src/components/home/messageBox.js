@@ -243,6 +243,8 @@ function Message(props) {
         );
 }
 
+export { Message };
+
 function MsgContent(props) {
     var type = props.type;
     var content = props.content;

@@ -1,4 +1,5 @@
 ﻿import { React, createRef, Component } from 'react';
+import { Message } from './home/messageBox';
 import * as Glob from '../script/Global';
 
 class CallWindow extends Component {
@@ -6,9 +7,11 @@ class CallWindow extends Component {
         //props: client
         super(props);
         this.state = {
-            onCall: false/*true*/,
+            onCall: false/*true*//*test*/,
             participants: [],
-            pagination: 1
+            pagination: 1,
+            roomId: "",
+            messages: []
         }
         this.roomIdRef = createRef();
         this.textRef = createRef();
@@ -20,10 +23,12 @@ class CallWindow extends Component {
         this.setCall = this.setCall.bind(this);
         this.joinRoom = this.joinRoom.bind(this);
         this.roomTextKeyDown = this.roomTextKeyDown.bind(this);
+        this.hangUp = this.hangUp.bind(this);
     }
 
-    setCall(bool) {
-        this.setState({ onCall: bool });
+    setCall(id) {
+        if (typeof id == "string")
+            this.setState({ onCall: true, roomId: id });
     }
 
     joinRoom() {
@@ -41,49 +46,70 @@ class CallWindow extends Component {
         }
     }
 
+    hangUp() {
+        //reset state
+        this.setState({ onCall: false, participants: [], pagination: 1, roomId: "", messages: [] });
+        Glob.leaveCall();
+    }
+
     //bootstrap row?
     //each video has mute icon
     render() {
-        return (
-            <div id="content-container">
-                {!this.state.onCall ?
+        if (!this.state.onCall)
+            return (
+                <div id="content-container">
                     <div id="call-outer">
-                        <div className="btn btn-outline-success" onClick={() => Glob.createRoom()}>Create a room</div>
+                        <div className="btn btn-outline-success f-left" onClick={() => Glob.createRoom()}>Create a room</div>
                         <div style={{ display: "inline" }}>or</div>
-                        <input type="text" placeholder="Enter Room Number" ref={this.roomIdRef} />
-                        <div className="btn btn-outline-primary" onClick={this.joinRoom}>Join room</div>
-                    </div> :
-                    <div id="full-screen">
-                        <div id="call-left-side">
-                            <div id="videos-container">
-                                <video id="local" playsInline autoPlay></video>
-                                <video id="remote" playsInline autoPlay></video>
-                            </div>
-                            <div id="call-btns">
-                                <div className="rounded-circle">Mute</div>
-                                <div className="rounded-circle">Hide camera</div>
-                                <div className="rounded-circle">Raise Hand</div>
-                                <div className="rounded-circle">Presentation</div>
-                                <div className="rounded-circle">Hang up</div>
-                            </div>
+                        <input type="text" placeholder="Enter Room Id" ref={this.roomIdRef} />
+                        <div className="btn btn-outline-primary f-right" onClick={this.joinRoom}>Join room</div>
+                    </div>
+                </div>
+            );
+        else
+            return (
+                <div id="full-screen">
+                    <div id="call-left-side">
+                        <div id="videos-container">
+                            <video id="local" playsInline autoPlay></video>
+                            <video id="remote" playsInline autoPlay></video>
                         </div>
-                        <div id="message-container">
-                            <div className="pagination">
-                                <div className="page-item participants-btn" onClick={() => this.setState({ pagination: 0 })}>Participants</div>
-                                <div className="page-item call-chat-btn" onClick={() => this.setState({ pagination: 1 })}>Chat</div>
+                        <div id="call-btns-container">
+                            <div id="call-btns">
+                                <div><i className="fa fa-volume-xmark"></i>{/*mute*/}</div>
+                                <div><i className="fa fa-eye-slash"></i>{/*hide camera*/}</div>
+                                <div><i className="fa fa-hand"></i>{/*raise hand*/}</div>
+                                <div><i className="fa fa-arrow-up-from-bracket"></i>{/*presentation*/}</div>
+                                <div onClick={this.hangUp}><i className="fa fa-phone-slash"></i></div>
+                                {/*invite friends*/}
                             </div>
-                            {this.state.pagination == 1 ?
-                                <input type="text" placeholder="Chat With Others..."
-                                    ref={this.textRef} onKeyDown={this.roomTextKeyDown} /> :
-                                <div>
-                                    {this.state.participants.map((ele) => <div>ele.contactName</div>)}
-                                </div>
-                            }
                         </div>
                     </div>
-                }
-            </div>
-        )
+                    <div id="call-right-side">
+                        <div>Room ID : {this.state.roomId}</div>
+                        <div className="pagination">
+                            <div className="page-item btn btn-link participants-btn" onClick={() => this.setState({ pagination: 0 })}>Participants</div>
+                            <div className="page-item btn btn-link call-chat-btn" onClick={() => this.setState({ pagination: 1 })}>Chat</div>
+                        </div>
+                        {this.state.pagination == 1 ?
+                            <div className="room-chat-container">
+                                <div className="room-chat-body">
+                                    {this.state.messages.map((rcd) =>
+                                        /*props?*/
+                                        <Message key={rcd.chatRecordId} chatRecord={rcd} userMail={this.state.userMail} targetMail={this.props.info.email} />
+                                    )}
+                                </div>
+                                <input type="text" placeholder="Chat With Others..." ref={this.textRef} onKeyDown={this.roomTextKeyDown} />
+                            </div> :
+                            <div>
+                                {this.state.participants.map((ele) =>
+                                    <div key={ele.contactName}>ele.contactName</div>
+                                )}
+                            </div>
+                        }
+                    </div>
+                </div>
+            );
     }
 }
 

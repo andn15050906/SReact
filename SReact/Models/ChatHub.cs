@@ -34,7 +34,7 @@ namespace SReact.Models
         public override async Task OnDisconnectedAsync(Exception exception)
         {
             ConnectionHandler.ConnectedIds.Remove(Context.ConnectionId);
-            //
+            await LeaveRoom();
             await ShowOffline(await userManager.GetEmailAsync(await userManager.GetUserAsync(Context.User)));
             await base.OnDisconnectedAsync(exception);
         }
@@ -161,7 +161,7 @@ namespace SReact.Models
             room.AddGuest(userMail, Context.ConnectionId);
             await Groups.AddToGroupAsync(Context.ConnectionId, roomId);
             //sending to multiple connections cause bug
-            await Clients.Client(room.HostConnectionId).SendAsync("StartCall", roomId);
+            await Clients.Client(room.Host.ConnectionId).SendAsync("StartCall", roomId);
             await Clients.Group(roomId).SendAsync("NewJoin", userMail, roomId);
         }
         //OfferSDP stable?
@@ -181,6 +181,18 @@ namespace SReact.Models
         {
             await Clients.OthersInGroup(roomId).SendAsync("ReceiveICECandidate", candidate);
         }
+        public async Task LeaveRoom()
+        {
+            var connection_room = ConnectionHandler.Connection_Room.FirstOrDefault(ele => ele.Item1 == Context.ConnectionId);
+            if (connection_room.Item1 != null)
+            {
+                Room room = connection_room.Item2;
+                room.RemoveParticipant(Context.ConnectionId);
+                user = userManager.GetUserAsync(Context.User);
+                userMail = await userManager.GetEmailAsync(await user);
+                await Clients.OthersInGroup(connection_room.Item2.Id).SendAsync("DetectLeave", userMail, room.Id);
+            }
+        }
         
 
         //not yet used (chat feature)
@@ -193,7 +205,7 @@ namespace SReact.Models
         }
     }
 
-    //use this for statistic (add feature)
+    //add feature: UserHandler for statistic
     public static class ConnectionHandler
     {
         public static List<string> ConnectedIds = new List<string>();
@@ -204,31 +216,46 @@ namespace SReact.Models
     public class Room
     {
         public string Id;
-        public string Host;
-        public string HostConnectionId;
-        public List<string> Guests;
+        public Participant Host;
+        public List<Participant> Guests;
         public string OfferSDP;
 
         public Room(string roomId, string hostMail, string hostConnectionId)
         {
             Id = roomId;
-            Host = hostMail;
-            HostConnectionId = hostConnectionId;
-            Guests = new List<string>();
+            Host = new Participant(hostMail, hostConnectionId);
+            Guests = new List<Participant>();
             ConnectionHandler.Rooms.Add(this);
             ConnectionHandler.Connection_Room.Add((hostConnectionId, this));
         }
 
         public void AddGuest(string mail, string connectionId)
         {
-            Guests.Add(mail);
+            Guests.Add(new Participant(mail, connectionId));
             ConnectionHandler.Connection_Room.Add((connectionId, this));
         }
 
-        public void RemoveGuest(string mail, string connectionId)
+        public void RemoveParticipant(string connectionId)
         {
-            Guests.Remove(mail);
+            if (connectionId == Host.ConnectionId)
+            {
+                if (Guests.Count > 0)
+                    Host = Guests[0];
+                return;
+            }
+            Guests.Remove(Guests.FirstOrDefault(ele => ele.ConnectionId == connectionId));
             ConnectionHandler.Connection_Room.Remove((connectionId, this));
+        }
+    }
+
+    public class Participant
+    {
+        public string Mail;
+        public string ConnectionId;
+        public Participant(string mail, string connectionId)
+        {
+            Mail = mail;
+            ConnectionId = connectionId;
         }
     }
 }
